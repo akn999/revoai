@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 /*
@@ -48,3 +51,13 @@ function something()
 {
     // ..
 }
+
+require_once __DIR__.'/Feature/Salla/helpers.php';
+
+pest()->beforeEach(function () {
+    config(['salla.webhook_secret' => SALLA_TEST_SECRET, 'salla.app_id' => '1234', 'salla.backoff' => [0]]);
+    Carbon::setTestNow('2026-06-15 12:00:00');
+    Http::preventStrayRequests();
+    Sleep::fake();
+})
+    ->in('Feature/Salla');
