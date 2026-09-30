@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\PlanPriceFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +25,7 @@ use Illuminate\Support\Carbon;
 class PlanPrice extends Model
 {
     /** @use HasFactory<PlanPriceFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $guarded = [];
 

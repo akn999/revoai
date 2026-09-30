@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\AppEvent;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -11,4 +12,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('salla:tokens:refresh')->hourly()->withoutOverlapping();
 Schedule::command('salla:subscriptions:sweep')->hourly()->withoutOverlapping();
-Schedule::command('model:prune', ['--model' => [AppEvent::class]])->daily();
+Schedule::command('model:prune', ['--model' => [AppEvent::class, ActivityLog::class]])->daily();

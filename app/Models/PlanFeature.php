@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\PlanFeatureFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,7 +22,7 @@ use Illuminate\Support\Carbon;
 class PlanFeature extends Model
 {
     /** @use HasFactory<PlanFeatureFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $guarded = [];
 

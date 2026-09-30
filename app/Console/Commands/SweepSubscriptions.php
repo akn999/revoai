@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Logging\Activity;
 use App\Services\SubscriptionService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -13,7 +14,11 @@ class SweepSubscriptions extends Command
 {
     public function handle(SubscriptionService $subscriptions): int
     {
-        $this->info("Expired {$subscriptions->sweepExpired()} subscription(s).");
+        $expired = $subscriptions->sweepExpired();
+        $this->info("Expired {$expired} subscription(s).");
+
+        Activity::channel('system')->bySystem()->with(['expired' => $expired])
+            ->info('salla.subscriptions_sweep_run', "Subscription sweep expired {$expired} subscription(s)");
 
         return self::SUCCESS;
     }

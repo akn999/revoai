@@ -19,7 +19,7 @@ class SubscriptionFactory extends Factory
     public function definition(): array
     {
         return [
-            'merchant_id' => Merchant::factory(),
+            'merchant_id' => fn () => Merchant::factory()->create()->merchant_id,
             'salla_subscription_id' => fake()->unique()->numberBetween(1000000000, 1999999999),
             'item_type' => 'plan',
             'item_key' => 'plan',

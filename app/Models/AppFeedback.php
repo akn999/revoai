@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToMerchant;
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\AppFeedbackFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,7 +24,7 @@ use Illuminate\Support\Carbon;
 class AppFeedback extends Model
 {
     /** @use HasFactory<AppFeedbackFactory> */
-    use BelongsToMerchant, HasFactory;
+    use BelongsToMerchant, HasFactory, LogsActivity;
 
     protected $table = 'app_feedback';
 

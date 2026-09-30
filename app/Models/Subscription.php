@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\BillingCycle;
 use App\Enums\SubscriptionStatus;
 use App\Models\Concerns\BelongsToMerchant;
+use App\Models\Concerns\LogsActivity;
 use Carbon\CarbonInterface;
 use Database\Factories\SubscriptionFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -55,7 +56,7 @@ use Illuminate\Support\Carbon;
 class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
-    use BelongsToMerchant, HasFactory;
+    use BelongsToMerchant, HasFactory, LogsActivity;
 
     protected $guarded = ['current_plan_lock'];
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\AppEventStatus;
 use App\Jobs\ProcessAppEvent;
+use App\Logging\Activity;
 use App\Models\AppEvent;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -33,6 +34,9 @@ class ReplayAppEvent extends Command
 
         foreach ($events as $event) {
             $event->update(['status' => AppEventStatus::Received, 'attempts' => 0, 'error' => null, 'processed_at' => null]);
+
+            Activity::channel('system')->bySystem()->on($event)->forMerchant($event->merchant_id)
+                ->info('salla.event_replayed', "Replayed {$event->event}");
 
             ProcessAppEvent::dispatch($event->id, $event->merchant_id)->onQueue(config('salla.queue'));
         }

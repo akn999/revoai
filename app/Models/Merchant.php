@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\MerchantStatus;
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\MerchantFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,7 +39,7 @@ use Illuminate\Support\Carbon;
 class Merchant extends Model
 {
     /** @use HasFactory<MerchantFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     /** id is the internal key; merchant_id is the Salla merchant ID used by every relation. */
     protected $guarded = ['id'];

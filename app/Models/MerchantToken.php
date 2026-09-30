@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToMerchant;
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\MerchantTokenFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +27,7 @@ use Illuminate\Support\Carbon;
 class MerchantToken extends Model
 {
     /** @use HasFactory<MerchantTokenFactory> */
-    use BelongsToMerchant, HasFactory;
+    use BelongsToMerchant, HasFactory, LogsActivity;
 
     protected $guarded = [];
 

@@ -2,10 +2,16 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogAuthenticationActivity;
+use App\Logging\ActivityContext;
+use App\Logging\ActivityLogger;
+use App\Logging\OutboundRequestLogger;
 use App\Support\CurrentMerchant;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -17,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(CurrentMerchant::class);
+        $this->app->scoped(ActivityContext::class);
+        $this->app->singleton(ActivityLogger::class);
     }
 
     /**
@@ -25,6 +33,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureActivityLog();
+    }
+
+    /**
+     * Hook the database activity log into auth events and the outbound HTTP client.
+     */
+    protected function configureActivityLog(): void
+    {
+        Event::subscribe(LogAuthenticationActivity::class);
+        Http::globalMiddleware(new OutboundRequestLogger);
     }
 
     /**

@@ -3,14 +3,26 @@
 namespace App\Enums;
 
 use Carbon\CarbonInterface;
+use Filament\Support\Contracts\HasLabel;
 
-enum BillingCycle: string
+enum BillingCycle: string implements HasLabel
 {
     case Monthly = 'monthly';
     case Yearly = 'yearly';
     case OneTime = 'one_time';
     case Trial = 'trial';
     case Custom = 'custom';
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Monthly => 'Monthly',
+            self::Yearly => 'Yearly',
+            self::OneTime => 'One time',
+            self::Trial => 'Trial',
+            self::Custom => 'Custom',
+        };
+    }
 
     /**
      * Derive the billing cycle from the payload's plan type and period dates.

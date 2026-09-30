@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Enums\AppEventStatus;
+use App\Logging\Activity;
+use App\Logging\PendingActivity;
 use App\Models\AppEvent;
 use App\Salla\AppEventRouter;
 use App\Salla\HandlerResult;
@@ -78,9 +80,25 @@ class ProcessAppEvent implements ShouldQueue
                 'processed_at' => now(),
                 'error' => null,
             ]);
+
+            $this->activity($event)->info(
+                $result === HandlerResult::Ignored ? 'salla.ignored' : 'salla.processed',
+                ($result === HandlerResult::Ignored ? 'Ignored ' : 'Processed ').$event->event,
+            );
+        } catch (Throwable $exception) {
+            $this->activity($event)->withException($exception)
+                ->warning('salla.attempt_failed', "Attempt {$event->attempts} of {$event->event} failed");
+
+            throw $exception;
         } finally {
             $previousMerchant ? $context->set($previousMerchant) : $context->clear();
         }
+    }
+
+    private function activity(AppEvent $event): PendingActivity
+    {
+        return Activity::channel('webhook')->bySystem()->on($event)->forMerchant($event->merchant_id)
+            ->with(['event' => $event->event, 'attempts' => $event->attempts]);
     }
 
     public function failed(Throwable $exception): void
@@ -89,6 +107,10 @@ class ProcessAppEvent implements ShouldQueue
             'status' => AppEventStatus::Failed,
             'error' => Str::limit($exception->getMessage(), 2000),
         ]);
+
+        Activity::channel('webhook')->bySystem()->forMerchant($this->merchantId)
+            ->with(['app_event_id' => $this->appEventId])->withException($exception)
+            ->error('salla.failed', 'Webhook processing failed permanently');
 
         Log::error('Salla app event failed', [
             'app_event_id' => $this->appEventId,

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Logging\Activity;
 use App\Models\Merchant;
 use App\Salla\SallaClient;
 use App\Services\MerchantService;
@@ -49,5 +50,8 @@ class FetchMerchantProfile implements ShouldQueue
         }
 
         $merchants->syncProfile($merchant, $info);
+
+        Activity::channel('system')->bySystem()->on($merchant)->forMerchant($this->merchantId)
+            ->info('salla.profile_synced', 'Merchant profile synced from Salla');
     }
 }

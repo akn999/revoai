@@ -17,7 +17,7 @@ class AppFeedbackFactory extends Factory
     public function definition(): array
     {
         return [
-            'merchant_id' => Merchant::factory(),
+            'merchant_id' => fn () => Merchant::factory()->create()->merchant_id,
             'rating' => fake()->numberBetween(1, 5),
             'rated_by' => fake()->name(),
             'comment' => fake()->sentence(),

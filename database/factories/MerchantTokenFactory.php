@@ -17,7 +17,7 @@ class MerchantTokenFactory extends Factory
     public function definition(): array
     {
         return [
-            'merchant_id' => Merchant::factory(),
+            'merchant_id' => fn () => Merchant::factory()->create()->merchant_id,
             'access_token' => fake()->sha256(),
             'refresh_token' => fake()->sha256(),
             'token_type' => 'bearer',

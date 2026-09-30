@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Logging\Activity;
 use App\Models\Merchant;
 use App\Models\MerchantToken;
 use App\Salla\SallaClient;
@@ -60,6 +61,9 @@ class TokenService
                 },
                 'refreshed_at' => now(),
             ]);
+
+            Activity::channel('system')->bySystem()->forMerchant($token->merchant_id)
+                ->info('salla.token_refreshed', 'Salla access token refreshed');
 
             return $token;
         });

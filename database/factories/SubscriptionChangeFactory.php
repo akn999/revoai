@@ -19,7 +19,7 @@ class SubscriptionChangeFactory extends Factory
     {
         return [
             'subscription_id' => Subscription::factory(),
-            'merchant_id' => Merchant::factory(),
+            'merchant_id' => fn () => Merchant::factory()->create()->merchant_id,
             'change_type' => 'started',
             'to_status' => 'active',
             'occurred_at' => now(),

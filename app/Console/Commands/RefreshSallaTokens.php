@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Logging\Activity;
 use App\Models\MerchantToken;
 use App\Services\TokenService;
 use Illuminate\Console\Attributes\Description;
@@ -28,6 +29,9 @@ class RefreshSallaTokens extends Command
                     $refreshed++;
                 } catch (Throwable $exception) {
                     $failed++;
+                    Activity::channel('system')->bySystem()->forMerchant($token->merchant_id)->withException($exception)
+                        ->error('salla.token_refresh_failed', 'Salla token refresh failed');
+
                     Log::error('Salla token refresh failed', [
                         'merchant_id' => $token->merchant_id,
                         'error' => $exception->getMessage(),
@@ -36,6 +40,9 @@ class RefreshSallaTokens extends Command
             });
 
         $this->info("Refreshed {$refreshed} token(s), {$failed} failed.");
+
+        Activity::channel('system')->bySystem()->with(compact('refreshed', 'failed'))
+            ->log('salla.tokens_refresh_run', "Token refresh run: {$refreshed} refreshed, {$failed} failed", $failed > 0 ? 'warning' : 'info');
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }

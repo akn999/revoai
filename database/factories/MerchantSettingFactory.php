@@ -17,7 +17,7 @@ class MerchantSettingFactory extends Factory
     public function definition(): array
     {
         return [
-            'merchant_id' => Merchant::factory(),
+            'merchant_id' => fn () => Merchant::factory()->create()->merchant_id,
             'settings' => ['name' => fake()->name()],
 
         ];
