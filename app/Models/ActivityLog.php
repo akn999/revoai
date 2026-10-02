@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\ActivityLevel;
+use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use Database\Factories\ActivityLogFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use LogicException;
 
@@ -73,6 +75,46 @@ class ActivityLog extends Model
         static::updating(function (): void {
             throw new LogicException('Activity log entries are append-only.');
         });
+    }
+
+    /**
+     * The merchant has no database foreign key, so it may not exist yet.
+     *
+     * @return BelongsTo<Merchant, $this>
+     */
+    public function merchant(): BelongsTo
+    {
+        return $this->belongsTo(Merchant::class, 'merchant_id', 'merchant_id');
+    }
+
+    public function actorLabel(): string
+    {
+        return match (true) {
+            $this->actor_type === null => 'Guest / none',
+            $this->actor_type === User::class => "User #{$this->actor_id}",
+            $this->actor_type === 'salla_merchant' => "Salla merchant {$this->actor_id}",
+            $this->actor_type === 'system' => 'System',
+            default => "{$this->actor_type} #{$this->actor_id}",
+        };
+    }
+
+    public function subjectLabel(): ?string
+    {
+        return $this->subject_type === null
+            ? null
+            : class_basename($this->subject_type)." #{$this->subject_id}";
+    }
+
+    public function subjectUrl(): ?string
+    {
+        return $this->subject_type === Subscription::class
+            ? SubscriptionResource::getUrl('view', ['record' => $this->subject_id])
+            : null;
+    }
+
+    public function actorUser(): ?User
+    {
+        return $this->actor_type === User::class ? User::find($this->actor_id) : null;
     }
 
     /**

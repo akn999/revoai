@@ -62,7 +62,7 @@ return [
         'enabled' => env('ACTIVITY_LOG_HTTP', true),
         'groups' => ['web' => 'web', 'api' => 'api'],
         'route_channels' => ['webhooks.*' => 'webhook'],
-        'exclude' => ['up', 'build/*', 'storage/*', 'favicon.ico', 'robots.txt', 'filament/*', 'livewire*/*.js'],
+        'exclude' => ['up', 'build/*', 'storage/*', 'favicon.ico', 'robots.txt', 'filament/*', 'livewire*/*.js', 'livewire*/update'],
     ],
 
     /*
