@@ -3,9 +3,11 @@
 namespace App\Jobs;
 
 use App\Enums\AppEventStatus;
+use App\Enums\MerchantStatus;
 use App\Logging\Activity;
 use App\Logging\PendingActivity;
 use App\Models\AppEvent;
+use App\Models\Merchant;
 use App\Salla\AppEventRouter;
 use App\Salla\HandlerResult;
 use App\Support\CurrentMerchant;
@@ -71,7 +73,7 @@ class ProcessAppEvent implements ShouldQueue
             $event->update(['status' => AppEventStatus::Processing, 'attempts' => $event->attempts + 1]);
 
             $handler = $router->for($event->event);
-            $result = $handler
+            $result = $handler && ! $this->isIgnoredForUninstalledStore($event)
                 ? DB::transaction(fn () => $handler->handle($event))
                 : HandlerResult::Ignored;
 
@@ -80,6 +82,10 @@ class ProcessAppEvent implements ShouldQueue
                 'processed_at' => now(),
                 'error' => null,
             ]);
+
+            if ($result === HandlerResult::Processed) {
+                Merchant::query()->where('merchant_id', $event->merchant_id)->update(['last_webhook_at' => now()]);
+            }
 
             $this->activity($event)->info(
                 $result === HandlerResult::Ignored ? 'salla.ignored' : 'salla.processed',
@@ -93,6 +99,18 @@ class ProcessAppEvent implements ShouldQueue
         } finally {
             $previousMerchant ? $context->set($previousMerchant) : $context->clear();
         }
+    }
+
+    /**
+     * Store events other than app.* are ignored while the app is uninstalled (FR-INS-004).
+     */
+    private function isIgnoredForUninstalledStore(AppEvent $event): bool
+    {
+        return ! str_starts_with($event->event, 'app.')
+            && Merchant::withoutGlobalScopes()
+                ->where('merchant_id', $event->merchant_id)
+                ->whereIn('status', [MerchantStatus::Uninstalled->value, MerchantStatus::Purged->value])
+                ->exists();
     }
 
     private function activity(AppEvent $event): PendingActivity

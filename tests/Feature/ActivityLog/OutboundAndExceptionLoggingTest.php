@@ -7,15 +7,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 test('outbound calls are logged with method, url, status and duration but without the query values', function () {
-    Http::fake(['api.example.com/*' => Http::response(['ok' => true], 200)]);
+    Http::fake(['api.salla.dev/*' => Http::response(['ok' => true], 200)]);
 
-    Http::get('https://api.example.com/things?token=secret-value&page=2');
+    Http::get('https://api.salla.dev/things?token=secret-value&page=2');
 
     expect(ActivityLog::where('channel', 'outbound')->sole())
         ->action->toBe('http.request')
         ->level->toBe(ActivityLevel::Info)
         ->http_method->toBe('GET')
-        ->url->toBe('https://api.example.com/things')
+        ->url->toBe('https://api.salla.dev/things')
         ->status_code->toBe(200)
         ->duration_ms->toBeInt()
         ->actor_type->toBe('system')
@@ -25,9 +25,9 @@ test('outbound calls are logged with method, url, status and duration but withou
 });
 
 test('failed outbound responses are logged as errors', function () {
-    Http::fake(['api.example.com/*' => Http::response('down', 503)]);
+    Http::fake(['api.salla.dev/*' => Http::response('down', 503)]);
 
-    Http::post('https://api.example.com/things');
+    Http::post('https://api.salla.dev/things');
 
     expect(ActivityLog::where('channel', 'outbound')->sole())
         ->level->toBe(ActivityLevel::Error)
@@ -38,7 +38,7 @@ test('failed outbound responses are logged as errors', function () {
 test('connection failures are logged with the exception and no status', function () {
     Http::fake(fn () => throw new ConnectionException('timed out'));
 
-    expect(fn () => Http::get('https://api.example.com/things'))->toThrow(ConnectionException::class);
+    expect(fn () => Http::get('https://api.salla.dev/things'))->toThrow(ConnectionException::class);
 
     $entry = ActivityLog::where('channel', 'outbound')->sole();
     expect($entry->level)->toBe(ActivityLevel::Error)
@@ -47,9 +47,9 @@ test('connection failures are logged with the exception and no status', function
 });
 
 test('an outbound call made inside a request is not attributed to the inbound client', function () {
-    Http::fake(['api.example.com/*' => Http::response([], 200)]);
+    Http::fake(['api.salla.dev/*' => Http::response([], 200)]);
     Route::middleware('web')->get('/_probe/outbound', function () {
-        Http::get('https://api.example.com/things');
+        Http::get('https://api.salla.dev/things');
 
         return 'ok';
     });
@@ -65,7 +65,7 @@ test('outbound logging can be switched off', function () {
     config(['activity-log.outbound.enabled' => false]);
     Http::fake();
 
-    Http::get('https://api.example.com/things');
+    Http::get('https://api.salla.dev/things');
 
     expect(ActivityLog::count())->toBe(0);
 });

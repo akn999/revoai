@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Logging\Activity;
+use App\Models\Merchant;
 use App\Models\MerchantToken;
 use App\Services\TokenService;
 use Illuminate\Console\Attributes\Description;
@@ -22,13 +23,15 @@ class RefreshSallaTokens extends Command
 
         MerchantToken::withoutGlobalScopes()
             ->whereNull('revoked_at')
-            ->where('expires_at', '<=', now()->addDays(3))
+            ->where('expires_at', '<=', now()->addDays((int) config('revo.limits.token_refresh_days')))
             ->each(function (MerchantToken $token) use ($tokens, &$refreshed, &$failed): void {
                 try {
                     $tokens->refresh($token);
+                    Merchant::query()->where('merchant_id', $token->merchant_id)->update(['reauth_required' => false]);
                     $refreshed++;
                 } catch (Throwable $exception) {
                     $failed++;
+                    Merchant::query()->where('merchant_id', $token->merchant_id)->update(['reauth_required' => true]);
                     Activity::channel('system')->bySystem()->forMerchant($token->merchant_id)->withException($exception)
                         ->error('salla.token_refresh_failed', 'Salla token refresh failed');
 

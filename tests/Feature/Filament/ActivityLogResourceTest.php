@@ -6,6 +6,7 @@ use App\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Models\ActivityLog;
+use App\Models\AdminUser;
 use App\Models\AppEvent;
 use App\Models\Merchant;
 use App\Models\Subscription;
@@ -19,7 +20,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->travelTo('2026-06-15 12:00:00');
     Filament::setCurrentPanel('admin');
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(AdminUser::factory()->withAppAuthentication()->create(), 'admin');
     ActivityLog::query()->delete();
 });
 
@@ -124,12 +125,12 @@ function logsExcept(array $fixture, array $keys): array
 
 describe('authorization and read-only', function () {
     test('guests are sent to the panel login', function () {
-        auth()->logout();
+        auth('admin')->logout();
 
         $this->get('/admin/activity-logs')->assertRedirect('/admin/login');
     });
 
-    test('a registered user can open the list and an entry', function () {
+    test('an admin user can open the list and an entry', function () {
         $entry = logEntry();
 
         $this->get('/admin/activity-logs')->assertOk();

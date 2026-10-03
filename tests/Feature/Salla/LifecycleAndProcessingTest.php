@@ -15,10 +15,8 @@ use App\Models\SubscriptionChange;
 use App\Models\SubscriptionFeature;
 use App\Models\SubscriptionPeriod;
 use App\Support\CurrentMerchant;
-use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Tests\Fixtures\ThrowingHandler;
@@ -57,12 +55,12 @@ test('EC-54 reinstalling after an uninstall reuses the merchant row', function (
         ->and($merchant->token->access_token)->toBe('new-access');
 });
 
-test('an app installed event also reactivates an uninstalled merchant', function () {
+test('an app installed event after an uninstall puts the merchant back to pending', function () {
     deliverSalla(sallaEvent('app.installed', ['app_scopes' => []], 0));
     deliverSalla(sallaEvent('app.uninstalled', [], 5));
     deliverSalla(sallaEvent('app.installed', ['app_scopes' => []], 10));
 
-    expect(sallaMerchant()->status)->toBe(MerchantStatus::Active);
+    expect(sallaMerchant()->status)->toBe(MerchantStatus::Pending);
 });
 
 test('EC-55 an uninstall older than the reinstall already processed is ignored', function () {
@@ -230,66 +228,14 @@ test('a failed-event storm raises a critical alert', function () {
     Log::shouldHaveReceived('critical')->once();
 });
 
-test('app events older than twelve months are pruned', function () {
-    $old = AppEvent::factory()->create(['created_at' => now()->subMonths(13)]);
-    $recent = AppEvent::factory()->create(['created_at' => now()->subMonths(11)]);
+test('webhook events older than the retention are pruned', function () {
+    $old = AppEvent::factory()->create(['created_at' => now()->subDays(91)]);
+    $recent = AppEvent::factory()->create(['created_at' => now()->subDays(89)]);
 
     $this->artisan('model:prune', ['--model' => [AppEvent::class]])->assertSuccessful();
 
     expect(AppEvent::whereKey($old->id)->exists())->toBeFalse()
         ->and(AppEvent::whereKey($recent->id)->exists())->toBeTrue();
-});
-
-test('EC-62 embedded requests need a verified token and a merchant that can use the app', function () {
-    config(['salla.introspect_url' => 'https://api.salla.dev/exchange-authority/v1/introspect']);
-    $introspect = fn (int $merchantId) => Http::fake([
-        'api.salla.dev/exchange-authority/v1/introspect' => Http::response([
-            'status' => 200, 'success' => true, 'data' => ['merchant_id' => $merchantId, 'user_id' => 987654, 'exp' => '2026-06-16T12:00:00Z'],
-        ]),
-    ]);
-
-    $introspect(11);
-    $this->getJson('/api/embedded/status')->assertUnauthorized();
-
-    foreach ([
-        'unknown' => null,
-        'inactive' => MerchantStatus::Inactive,
-        'uninstalled' => MerchantStatus::Uninstalled,
-        'pending' => MerchantStatus::Pending,
-    ] as $label => $status) {
-        $merchantId = 100 + strlen($label);
-        $status && Merchant::factory()->create(['merchant_id' => $merchantId, 'status' => $status]);
-        $introspect($merchantId);
-
-        $this->getJson('/api/embedded/status', ['Authorization' => 'Bearer session-token'])
-            ->assertStatus(402);
-    }
-});
-
-test('an active merchant sees its status, plan and addons through the embedded API', function () {
-    deliverSalla(sallaEvent('app.subscription.started', planData(['plan_name' => 'Pro']), 0));
-    deliverSalla(sallaEvent('app.subscription.started', addonData(['subscription_id' => 3000000001]), 1));
-    Http::fake([
-        'api.salla.dev/*' => Http::response(['success' => true, 'data' => ['merchant_id' => SALLA_TEST_MERCHANT, 'user_id' => 1]]),
-    ]);
-
-    $this->getJson('/api/embedded/status', ['Authorization' => 'Bearer session-token'])
-        ->assertOk()
-        ->assertJsonPath('merchant_id', SALLA_TEST_MERCHANT)
-        ->assertJsonPath('status', 'active')
-        ->assertJsonPath('plan.name', 'Pro')
-        ->assertJsonPath('plan.billing_cycle', 'monthly')
-        ->assertJsonPath('addons.0.item_key', 'addon_chat_support')
-        ->assertJsonPath('addons.0.quantity', 3);
-
-    Http::assertSent(fn (Request $request) => $request->hasHeader('S-Source', '1234') && $request['token'] === 'session-token');
-});
-
-test('a token Salla rejects never reaches the app', function () {
-    Merchant::factory()->active()->create(['merchant_id' => SALLA_TEST_MERCHANT]);
-    Http::fake(['api.salla.dev/*' => Http::response(['success' => false, 'error' => ['code' => 'Unauthorized']], 401)]);
-
-    $this->getJson('/api/embedded/status', ['Authorization' => 'Bearer forged'])->assertUnauthorized();
 });
 
 test('authorize event dispatches profile fetch only once per delivery', function () {

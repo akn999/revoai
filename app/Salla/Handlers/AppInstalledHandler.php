@@ -28,8 +28,8 @@ class AppInstalledHandler implements AppEventHandler
             'last_event_at' => $event->event_created_at,
         ])->save();
 
-        if ($merchant->status === MerchantStatus::Uninstalled) {
-            $merchant->activate();
+        if (in_array($merchant->status, [MerchantStatus::Uninstalled, MerchantStatus::Purged], true)) {
+            $merchant->forceFill(['status' => MerchantStatus::Pending])->save();
         }
 
         return HandlerResult::Processed;

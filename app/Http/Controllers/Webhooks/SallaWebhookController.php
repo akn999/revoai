@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProcessAppEvent;
 use App\Logging\Activity;
 use App\Models\AppEvent;
+use App\Platform\SallaDate;
 use App\Salla\PayloadVault;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class SallaWebhookController extends Controller
                 'merchant_id' => (int) $merchantId,
                 'event' => $eventName,
                 'payload' => $vault->seal($body),
-                'event_created_at' => data_get($body, 'created_at') ?? now(),
+                'event_created_at' => SallaDate::parse(data_get($body, 'created_at')) ?? now(),
                 'status' => AppEventStatus::Received,
             ],
         );

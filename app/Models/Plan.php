@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditsAdminChanges;
 use App\Models\Concerns\LogsActivity;
 use Database\Factories\PlanFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $salla_plan_name
  * @property string|null $salla_item_slug
  * @property int $is_active
+ * @property array<string, bool>|null $feature_flags
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -25,7 +27,7 @@ use Illuminate\Support\Carbon;
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
-    use HasFactory, LogsActivity;
+    use AuditsAdminChanges, HasFactory, LogsActivity;
 
     protected $guarded = [];
 
@@ -34,7 +36,7 @@ class Plan extends Model
      */
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'feature_flags' => 'array'];
     }
 
     /**

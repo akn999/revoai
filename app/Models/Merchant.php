@@ -33,6 +33,18 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property string $default_language
+ * @property array<int, string>|null $enabled_languages
+ * @property string|null $plan_code
+ * @property string|null $plan_status
+ * @property string|null $salla_plan_ref
+ * @property Carbon|null $purge_at
+ * @property Carbon|null $last_webhook_at
+ * @property bool $reauth_required
+ * @property int $sync_pages_done
+ * @property int|null $sync_total_pages
+ * @property Carbon|null $sync_started_at
+ * @property Carbon|null $sync_finished_at
  * @property Carbon|null $deleted_at
  */
 #[UseFactory(MerchantFactory::class)]
@@ -57,6 +69,12 @@ class Merchant extends Model
             'uninstalled_at' => 'datetime',
             'profile_synced_at' => 'datetime',
             'last_event_at' => 'datetime',
+            'enabled_languages' => 'array',
+            'purge_at' => 'datetime',
+            'last_webhook_at' => 'datetime',
+            'reauth_required' => 'boolean',
+            'sync_started_at' => 'datetime',
+            'sync_finished_at' => 'datetime',
         ];
     }
 
@@ -68,6 +86,14 @@ class Merchant extends Model
     /**
      * @return HasOne<MerchantToken, $this>
      */
+    /**
+     * @return HasOne<MerchantWallet, $this>
+     */
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(MerchantWallet::class, 'merchant_id', 'merchant_id');
+    }
+
     public function token(): HasOne
     {
         return $this->hasOne(MerchantToken::class, 'merchant_id', 'merchant_id');
@@ -120,6 +146,19 @@ class Merchant extends Model
     public function activeAddons(): HasMany
     {
         return $this->subscriptions()->where('item_type', 'addon')->entitled();
+    }
+
+    /**
+     * Whether the merchant's current Revo plan includes a feature (FR-BIL-005).
+     * Lapsed or missing plans lock plan features but never data or credits.
+     */
+    public function planAllows(string $feature): bool
+    {
+        if (! in_array($this->plan_status, ['active', 'trial'], true) || ! $this->plan_code) {
+            return false;
+        }
+
+        return (bool) data_get(Plan::query()->where('slug', $this->plan_code)->value('feature_flags'), $feature);
     }
 
     public function canUseApp(): bool

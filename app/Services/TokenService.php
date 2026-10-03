@@ -40,12 +40,12 @@ class TokenService
     /**
      * Refresh under a per-merchant lock so two workers never spend the same refresh token.
      */
-    public function refresh(MerchantToken $token): MerchantToken
+    public function refresh(MerchantToken $token, bool $force = false): MerchantToken
     {
-        return Cache::lock("salla-token-refresh:{$token->merchant_id}", 30)->block(10, function () use ($token) {
+        return Cache::lock("salla-token-refresh:{$token->merchant_id}", 30)->block(10, function () use ($token, $force) {
             $token->refresh();
 
-            if (! $token->isExpiring()) {
+            if (! $force && ! $token->isExpiring()) {
                 return $token;
             }
 

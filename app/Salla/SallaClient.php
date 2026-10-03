@@ -2,8 +2,11 @@
 
 namespace App\Salla;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class SallaClient
 {
@@ -64,6 +67,12 @@ class SallaClient
 
     private function request(): PendingRequest
     {
-        return Http::acceptJson()->timeout(10)->retry(2, 200, throw: false);
+        return Http::acceptJson()->timeout(10)->retry(
+            2,
+            200,
+            when: fn (Throwable $exception): bool => $exception instanceof ConnectionException
+                || ($exception instanceof RequestException && $exception->response->serverError()),
+            throw: false,
+        );
     }
 }

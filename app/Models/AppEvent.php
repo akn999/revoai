@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\AppEventStatus;
+use App\Jobs\ProcessAppEvent;
+use App\Logging\Activity;
 use Database\Factories\AppEventFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,12 +63,25 @@ class AppEvent extends Model
     }
 
     /**
-     * Events older than 12 months are archived by the scheduled prune.
+     * Raw webhook payloads are kept for the configured number of days (90 by default).
      *
      * @return Builder<AppEvent>
      */
     public function prunable(): Builder
     {
-        return static::where('created_at', '<', now()->subMonths(12));
+        return static::where('created_at', '<', now()->subDays((int) config('revo.limits.webhook_days', 90)));
+    }
+
+    /**
+     * Put the event back in the queue as if it had just arrived.
+     */
+    public function replay(): void
+    {
+        $this->update(['status' => AppEventStatus::Received, 'attempts' => 0, 'error' => null, 'processed_at' => null]);
+
+        Activity::channel('system')->bySystem()->on($this)->forMerchant($this->merchant_id)
+            ->info('salla.event_replayed', "Replayed {$this->event}");
+
+        ProcessAppEvent::dispatch($this->id, $this->merchant_id)->onQueue(config('salla.queue'));
     }
 }

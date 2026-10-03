@@ -60,11 +60,11 @@ test('request logging can be switched off', function () {
 });
 
 test('api requests log under the api channel', function () {
-    $this->getJson('/api/embedded/status')->assertUnauthorized();
+    $this->postJson('/api/app/session', [])->assertUnprocessable();
 
     expect(ActivityLog::where('action', 'http.request')->sole())
         ->channel->toBe('api')
-        ->status_code->toBe(401)
+        ->status_code->toBe(422)
         ->level->toBe(ActivityLevel::Warning);
 });
 

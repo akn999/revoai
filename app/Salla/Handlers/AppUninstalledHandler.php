@@ -4,6 +4,7 @@ namespace App\Salla\Handlers;
 
 use App\Enums\MerchantStatus;
 use App\Models\AppEvent;
+use App\Platform\Events\StoreUninstalled;
 use App\Salla\HandlerResult;
 use App\Services\MerchantService;
 use App\Services\SubscriptionService;
@@ -29,8 +30,11 @@ class AppUninstalledHandler implements AppEventHandler
         $merchant->forceFill([
             'status' => MerchantStatus::Uninstalled,
             'uninstalled_at' => $uninstalledAt ? Date::parse($uninstalledAt) : $event->event_created_at,
+            'purge_at' => now()->addDays((int) config('revo.limits.purge_grace_days')),
             'last_event_at' => $event->event_created_at,
         ])->save();
+
+        StoreUninstalled::dispatch($merchant->merchant_id);
 
         return HandlerResult::Processed;
     }

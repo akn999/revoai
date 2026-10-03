@@ -8,6 +8,7 @@ use App\Models\Merchant;
 use App\Models\MerchantToken;
 use App\Models\Subscription;
 use App\Services\MerchantService;
+use App\Sync\InitialProductSync;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -118,7 +119,7 @@ test('EC-17 an event for a soft-deleted merchant restores the same row', functio
 });
 
 test('authorize queues one profile fetch on the webhooks queue', function () {
-    Queue::fake([FetchMerchantProfile::class]);
+    Queue::fake([FetchMerchantProfile::class, InitialProductSync::class]);
 
     deliverSalla(sallaEvent('app.store.authorize', authorizeData()));
 

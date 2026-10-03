@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Date;
 
 class SubscriptionService
 {
+    public function __construct(private MerchantPlanService $plans) {}
+
     public function start(Merchant $merchant, AppEvent $event): HandlerResult
     {
         $data = $event->data();
@@ -86,6 +88,7 @@ class SubscriptionService
 
         $subscription->recordChange($this->changeType($from, $subscription), $from ?? [], $event);
         $merchant->activateFrom($event);
+        $this->plans->sync($merchant);
 
         return HandlerResult::Processed;
     }
@@ -123,6 +126,7 @@ class SubscriptionService
         $this->syncFeatures($subscription, $data['features'] ?? null);
         $subscription->recordChange('renewed', $from, $event);
         $merchant->activateFrom($event);
+        $this->plans->sync($merchant);
 
         return HandlerResult::Processed;
     }
@@ -139,6 +143,7 @@ class SubscriptionService
 
         $this->close($subscription, $to, $event);
         $this->refreshMerchantStatus($merchant);
+        $this->plans->sync($merchant);
 
         return HandlerResult::Processed;
     }
@@ -185,6 +190,7 @@ class SubscriptionService
         $this->syncFeatures($trial, $data['features'] ?? null);
         $trial->recordChange('started', $from ?? [], $event);
         $merchant->activateFrom($event);
+        $this->plans->sync($merchant);
 
         return HandlerResult::Processed;
     }
@@ -200,6 +206,7 @@ class SubscriptionService
 
         $this->close($trial, $to, $event, endAccessNow: true);
         $this->refreshMerchantStatus($merchant);
+        $this->plans->sync($merchant);
 
         return HandlerResult::Processed;
     }
@@ -246,6 +253,7 @@ class SubscriptionService
 
                     if ($merchant = Merchant::findBySallaId($subscription->merchant_id)) {
                         $this->refreshMerchantStatus($merchant);
+                        $this->plans->sync($merchant);
                     }
                 }
             });

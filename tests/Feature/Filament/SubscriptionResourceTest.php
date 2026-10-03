@@ -9,6 +9,7 @@ use App\Filament\Resources\Subscriptions\RelationManagers\ChangesRelationManager
 use App\Filament\Resources\Subscriptions\RelationManagers\FeaturesRelationManager;
 use App\Filament\Resources\Subscriptions\RelationManagers\PeriodsRelationManager;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
+use App\Models\AdminUser;
 use App\Models\Merchant;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -18,13 +19,14 @@ use App\Models\SubscriptionPeriod;
 use App\Models\User;
 use App\Support\CurrentMerchant;
 use Filament\Facades\Filament;
+use Filament\Models\Contracts\FilamentUser;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 beforeEach(function () {
     Filament::setCurrentPanel('admin');
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(AdminUser::factory()->withAppAuthentication()->create(), 'admin');
 });
 
 /**
@@ -114,12 +116,12 @@ function panelAll(array $fixture): array
 
 describe('authorization', function () {
     test('guests are sent to the panel login', function () {
-        auth()->logout();
+        auth('admin')->logout();
 
         $this->get('/admin/subscriptions')->assertRedirect('/admin/login');
     });
 
-    test('any registered user can open the list and a view page', function () {
+    test('an admin user can open the list and a view page', function () {
         $fixture = panelFixture();
 
         $this->get('/admin/subscriptions')->assertOk();
@@ -627,7 +629,8 @@ describe('enums and user', function () {
         [BillingCycle::Custom, 'Custom'],
     ]);
 
-    test('every registered user can access the panel', function () {
-        expect(User::factory()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
+    test('only admin users can access the panel', function () {
+        expect(AdminUser::factory()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeTrue()
+            ->and(User::factory()->create())->not->toBeInstanceOf(FilamentUser::class);
     });
 });

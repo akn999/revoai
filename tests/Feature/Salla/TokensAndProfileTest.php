@@ -5,6 +5,7 @@ use App\Jobs\FetchMerchantProfile;
 use App\Models\Merchant;
 use App\Models\MerchantToken;
 use App\Services\TokenService;
+use App\Sync\InitialProductSync;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 
 test('authorize stores the tokens encrypted with their expiry', function () {
-    Queue::fake([FetchMerchantProfile::class]);
+    Queue::fake([FetchMerchantProfile::class, InitialProductSync::class]);
     $expires = now()->addDays(14)->timestamp;
 
     deliverSalla(sallaEvent('app.store.authorize', authorizeData(['expires' => $expires])));
@@ -27,7 +28,7 @@ test('authorize stores the tokens encrypted with their expiry', function () {
 });
 
 test('EC-18 a second authorize replaces the token row', function () {
-    Queue::fake([FetchMerchantProfile::class]);
+    Queue::fake([FetchMerchantProfile::class, InitialProductSync::class]);
 
     deliverSalla(sallaEvent('app.store.authorize', authorizeData(), 0));
     deliverSalla(sallaEvent('app.store.authorize', authorizeData([
@@ -43,7 +44,7 @@ test('EC-18 a second authorize replaces the token row', function () {
 });
 
 test('EC-19 an already expired token is saved and refreshed by the next scheduled run', function () {
-    Queue::fake([FetchMerchantProfile::class]);
+    Queue::fake([FetchMerchantProfile::class, InitialProductSync::class]);
     Http::fake(['accounts.salla.sa/oauth2/token' => Http::response([
         'access_token' => 'fresh-access', 'refresh_token' => 'fresh-refresh', 'expires_in' => 1209600,
     ])]);

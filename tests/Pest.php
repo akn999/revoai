@@ -1,5 +1,9 @@
 <?php
 
+use App\Ai\Providers\ImageModelProvider;
+use App\Ai\Providers\TextModelProvider;
+use App\Ai\Testing\FakeImageModelProvider;
+use App\Ai\Testing\FakeTextModelProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -58,6 +62,15 @@ pest()->beforeEach(function () {
     config(['salla.webhook_secret' => SALLA_TEST_SECRET, 'salla.app_id' => '1234', 'salla.backoff' => [0]]);
     Carbon::setTestNow('2026-06-15 12:00:00');
     Http::preventStrayRequests();
+    Http::fake(['api.salla.dev/admin/v2/*' => Http::response(['data' => [], 'pagination' => ['totalPages' => 1]])]);
     Sleep::fake();
 })
     ->in('Feature/Salla');
+
+pest()->beforeEach(function () {
+    Http::preventStrayRequests();
+    app()->instance(TextModelProvider::class, $text = new FakeTextModelProvider);
+    app()->instance(ImageModelProvider::class, $image = new FakeImageModelProvider);
+    $this->fakeText = $text;
+    $this->fakeImage = $image;
+})->in('Feature');

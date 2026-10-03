@@ -17,7 +17,7 @@ class MerchantService
     {
         $merchant = Merchant::withTrashed()->createOrFirst(
             ['merchant_id' => $event->merchant_id],
-            ['status' => MerchantStatus::Pending],
+            ['status' => MerchantStatus::Pending, 'default_language' => 'ar', 'enabled_languages' => config('revo.product.languages')],
         );
 
         if ($merchant->trashed()) {

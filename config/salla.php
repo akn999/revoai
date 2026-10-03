@@ -4,6 +4,9 @@ use App\Salla\Handlers\AppInstalledHandler;
 use App\Salla\Handlers\AppUninstalledHandler;
 use App\Salla\Handlers\AppUpdatedHandler;
 use App\Salla\Handlers\FeedbackCreatedHandler;
+use App\Salla\Handlers\ProductDeletedHandler;
+use App\Salla\Handlers\ProductImagesUpdatedHandler;
+use App\Salla\Handlers\ProductUpsertHandler;
 use App\Salla\Handlers\SettingsUpdatedHandler;
 use App\Salla\Handlers\StoreAuthorizeHandler;
 use App\Salla\Handlers\SubscriptionEndedHandler;
@@ -38,5 +41,9 @@ return [
         'app.subscription.expired' => SubscriptionEndedHandler::class,
         'app.settings.updated' => SettingsUpdatedHandler::class,
         'app.feedback.created' => FeedbackCreatedHandler::class,
+        'product.created' => ProductUpsertHandler::class,
+        'product.updated' => ProductUpsertHandler::class,
+        'product.deleted' => ProductDeletedHandler::class,
+        'product.image.updated' => ProductImagesUpdatedHandler::class,
     ],
 ];

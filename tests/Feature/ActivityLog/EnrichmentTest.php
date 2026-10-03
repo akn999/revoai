@@ -1,13 +1,14 @@
 <?php
 
+use App\Http\Middleware\AuthenticateEmbeddedSession;
 use App\Http\Middleware\LogRequests;
 use App\Logging\Activity;
 use App\Logging\ActivityContext;
 use App\Models\ActivityLog;
 use App\Models\Merchant;
 use App\Models\User;
+use App\Platform\EmbeddedSessionService;
 use App\Support\CurrentMerchant;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 test('the authenticated user becomes the actor', function () {
@@ -103,15 +104,18 @@ test('a generated request id is exposed in the response header', function () {
         ->and(ActivityLog::where('action', 'http.request')->sole()->correlation_id)->toBe($header);
 });
 
-test('a verified embedded request is attributed to its merchant', function () {
-    Merchant::factory()->active()->create(['merchant_id' => 777]);
-    Http::fake(['api.salla.dev/*' => Http::response([
-        'success' => true, 'data' => ['merchant_id' => 777, 'user_id' => 1],
-    ])]);
+test('a session-authenticated request is attributed to its merchant', function () {
+    $merchant = Merchant::factory()->active()->create(['merchant_id' => 777]);
+    ['token' => $token] = app(EmbeddedSessionService::class)->start($merchant->merchant_id, 55);
+    Route::middleware(['api', AuthenticateEmbeddedSession::class])->get('/api/app/_probe', function () {
+        Activity::info('api', 'probe.hit');
 
-    $this->getJson('/api/embedded/status', ['Authorization' => 'Bearer session-token'])->assertOk();
+        return 'ok';
+    });
 
-    expect(ActivityLog::where('channel', 'api')->sole())
+    $this->getJson('/api/app/_probe', ['Authorization' => 'Bearer '.$token])->assertOk();
+
+    expect(ActivityLog::where('action', 'probe.hit')->sole())
         ->actor_type->toBe('salla_merchant')
         ->actor_id->toBe('777')
         ->merchant_id->toBe(777);
