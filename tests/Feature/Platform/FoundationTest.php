@@ -144,7 +144,10 @@ describe('session endpoint', function () {
         $response = $this->postJson('/api/app/session', ['token' => 'em_tok_abc'])->assertOk()->assertJsonPath('state', 'ready');
 
         expect(app(EmbeddedSessionService::class)->authenticate($response->json('token'))->salla_user_id)->toBe(91);
-        Http::assertSent(fn ($request) => $request->hasHeader('S-Source', '1234') && $request['token'] === 'em_tok_abc');
+        Http::assertSent(fn ($request) => $request->hasHeader('S-Source', '1234')
+            && $request['token'] === 'em_tok_abc'
+            && $request['iss'] === 'merchant-dashboard'
+            && $request['subject'] === 'embedded-page');
     });
 
     test('a store without OAuth tokens yet reports awaiting authorization', function () {

@@ -6,6 +6,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class SallaClient
@@ -52,9 +53,19 @@ class SallaClient
     {
         $response = $this->request()
             ->withHeaders(['S-Source' => (string) config('salla.app_id')])
-            ->post(config('salla.introspect_url'), ['token' => $token]);
+            ->post(config('salla.introspect_url'), [
+                'env' => 'prod',
+                'token' => $token,
+                'iss' => 'merchant-dashboard',
+                'subject' => 'embedded-page',
+            ]);
 
         if (! $response->successful() || ! $response->json('success')) {
+            Log::warning('Salla introspect rejected the embedded token', [
+                'status' => $response->status(),
+                'error' => $response->json('error') ?? $response->json('message'),
+            ]);
+
             return null;
         }
 
