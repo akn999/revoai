@@ -6,8 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Drops a half-created table first: MySQL commits CREATE TABLE before the foreign keys are added,
+     * so an earlier failed run can leave the table behind without recording the migration.
+     */
     public function up(): void
     {
+        Schema::dropIfExists('subscriptions');
+
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('merchant_id')->constrained('merchants', 'merchant_id');
