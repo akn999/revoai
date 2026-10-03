@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('merchant_id')->constrained('merchants', 'merchant_id')->cascadeOnDelete();
+            $table->foreignId('merchant_id')->constrained('merchants', 'merchant_id');
             $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedBigInteger('salla_subscription_id')->nullable();
             $table->enum('item_type', ['plan', 'addon'])->default('plan');
