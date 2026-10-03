@@ -13,14 +13,7 @@ class VerifySallaWebhook
     {
         $secret = (string) config('salla.webhook_secret');
 
-        $valid = $secret !== '' && match ($request->header('X-Salla-Security-Strategy')) {
-            'Signature' => hash_equals(
-                hash_hmac('sha256', $request->getContent(), $secret),
-                (string) $request->header('X-Salla-Signature'),
-            ),
-            'Token' => hash_equals($secret, (string) $request->bearerToken()),
-            default => false,
-        };
+        $valid = $secret == $request->header('Authorization');
 
         if (! $valid) {
             Activity::channel('webhook')->bySystem()
